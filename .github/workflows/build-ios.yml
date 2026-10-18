@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'GoogleUnlimited/**'
+      - 'bridge/real_core_bridge.go'
       - 'project.yml'
       - '.github/workflows/build-ios.yml'
 jobs:
@@ -14,6 +15,30 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Build pinned gotohp XCFramework
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init "$RUNNER_TEMP/gotohp"
+          cd "$RUNNER_TEMP/gotohp"
+          git remote add origin https://github.com/xob0t/gotohp.git
+          git fetch --depth 1 origin 97a5dc02db81f5571ce6b586f478600fcd44dd89
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "97a5dc02db81f5571ce6b586f478600fcd44dd89"
+          mkdir -p iosbridge
+          cp "$GITHUB_WORKSPACE/bridge/real_core_bridge.go" iosbridge/bridge.go
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          "$(go env GOPATH)/bin/gomobile" init
+          go get -tool golang.org/x/mobile/cmd/gobind@latest
+          go mod tidy
+          mkdir -p "$GITHUB_WORKSPACE/Vendor"
+          "$(go env GOPATH)/bin/gomobile" bind -target=ios -iosversion=17.0 -o "$GITHUB_WORKSPACE/Vendor/GotohpCore.xcframework" ./iosbridge
+          test -d "$GITHUB_WORKSPACE/Vendor/GotohpCore.xcframework"
+          find "$GITHUB_WORKSPACE/Vendor/GotohpCore.xcframework" -name '*.h' -maxdepth 6 -print
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Configure public iOS OAuth client
