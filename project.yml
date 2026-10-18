@@ -22,7 +22,6 @@ targets:
     dependencies:
       - framework: Vendor/GotohpCore.xcframework
         embed: false
-        link: true
       - package: GoogleSignIn
         product: GoogleSignIn
     info:
