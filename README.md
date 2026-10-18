@@ -1,5 +1,14 @@
 # GoogleUnlimited iOS
 
+## 主 IPA 自動整合 gotohp Framework（待 CI 驗證）
+
+`Build iOS IPA` Workflow 會喺同一次 GitHub Actions 工作中，從固定上游 Commit `97a5dc02db81f5571ce6b586f478600fcd44dd89` 重新建立 `Vendor/GotohpCore.xcframework`，並由 XcodeGen 靜態連結至主 App。呢個產物唔需要下載舊 Action Artifact 或手動合併。App 新增「檢查核心連接」，會由 Swift 呼叫真正 GoMobile `IosbridgeHealthcheck()`，用作驗證 IPA 包含核心。**本次新 Workflow 尚未有成功編譯證據**；需要先喺 Actions 驗證。
+
+### 登入安全限制
+
+現有「Pixel 實驗模式」`oauth_token` 只會留喺 iOS Keychain，**仍未兌換為 gotohp 需要嘅完整 Android auth query string**。目前 Swift 只呼叫非敏感健康檢查，不會將 OAuth Cookie、Google Token 或相片交畀 gotohp。安全認證橋接與 Pixel 上傳尚未驗證，因此 UI 仍維持禁止實驗上傳；正式 Google API 仍然係獨立且計入容量嘅上傳方式。
+
+
 ## 真正 gotohp 上傳入口（實驗性，未連 Swift）
 
 `bridge/real_core_bridge.go` 現已呼叫上游實際 `core.NewApi` 及 `core.UploadFile`，處理真實媒體上傳路徑。接口 `UploadWithCredential(filePath, credential)` **只接受完整 gotohp Android 認證 query string**，不是之前手動輸入的 `oauth_token` Cookie。橋接目前會為每次調用建立私有暫存設定並清理，禁用 DeleteFromHost；仍未進行 iPhone 端、認證安全及網絡測試。
