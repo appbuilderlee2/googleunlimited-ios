@@ -16,6 +16,27 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
         run: brew install xcodegen
+      - name: Configure public iOS OAuth client
+        env:
+          GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          value = os.environ.get("GOOGLE_IOS_CLIENT_ID", "").strip()
+          valid = value.endswith(".apps.googleusercontent.com")
+          if valid:
+              reversed_id = "com.googleusercontent.apps." + value.removesuffix(".apps.googleusercontent.com")
+          else:
+              value = "CONFIGURE_GOOGLE_IOS_CLIENT_ID"
+              reversed_id = "oauth-not-configured"
+          path = Path("project.yml")
+          content = path.read_text()
+          content = content.replace("__GOOGLE_CLIENT_ID__", value)
+          content = content.replace("__GOOGLE_REVERSED_CLIENT_ID__", reversed_id)
+          path.write_text(content)
+          print("OAuth enabled:", valid)
+          PY
       - name: Generate project
         run: xcodegen generate
       - name: Build unsigned device app
