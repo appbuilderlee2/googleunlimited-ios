@@ -17,7 +17,7 @@ Native SwiftUI iPhone app prototype for selecting photos/videos and preparing a 
 ## Build on GitHub
 Actions → **Build iOS IPA** → Run workflow. Download the `googleunlimited-ios-unsigned-ipa` artifact. The IPA is **unsigned**, intended to be signed by AltStore Classic on device, subject to AltStore's current capabilities, Apple ID/device limits, and iOS compatibility. GitHub Actions must not contain Apple credentials.
 
-For local development, open `GoogleUnlimited.xcodeproj` using a recent compatible Xcode.
+For local development, run `brew install xcodegen && xcodegen generate`, then open the generated `GoogleUnlimited.xcodeproj` using a recent compatible Xcode.
 
 ## Next phase
 Implement an optional **official Google Photos API** uploader with user-authorized OAuth and meaningful per-file verification. Official API uploads consume account quota. Pixel spoofing is not included and is not guaranteed to work on iOS.
