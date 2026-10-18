@@ -13,8 +13,12 @@ jobs:
           go-version: stable
       - name: Fetch and pin source for this run
         run: |
-          git clone --depth 1 https://github.com/xob0t/gotohp.git "$RUNNER_TEMP/gotohp"
+          git init "$RUNNER_TEMP/gotohp"
           cd "$RUNNER_TEMP/gotohp"
+          git remote add origin https://github.com/xob0t/gotohp.git
+          git fetch --depth 1 origin 97a5dc02db81f5571ce6b586f478600fcd44dd89
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "97a5dc02db81f5571ce6b586f478600fcd44dd89"
           git rev-parse HEAD > "$GITHUB_WORKSPACE/gotohp-source-commit.txt"
           cp "$GITHUB_WORKSPACE/bridge/real_core_bridge.go" ./iosbridge.go
           mkdir -p iosbridge
