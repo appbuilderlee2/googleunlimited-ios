@@ -1,5 +1,14 @@
 # GoogleUnlimited iOS
 
+## 真正 gotohp 核心移植進度
+
+已加入 [gotohp iOS 相容性審查 Workflow](.github/workflows/audit-gotohp-ios.yml)，使用 upstream `xob0t/gotohp` **真實 backend**（唔係示範 Go 函式）執行 iOS arm64 編譯檢查，並輸出依賴圖及完整編譯日誌。Actions 尚待運行驗證。Workflow 會記錄當次上游 Commit；正式移植前必須再固定已審核 Commit，避免上游更新引入不明程式碼。
+
+新增 [GotohpUploadAdapter.swift](GoogleUnlimited/GotohpUploadAdapter.swift) 以 **fail closed** 形式保護 iOS App：gotohp 未真正移植同驗證之前，所有實驗 Pixel 上傳請求都明確失敗，絕對唔會冒充官方 API 上傳成功，亦唔會傳遞 Keychain Token。
+
+**尚未完成：** 拆分 desktop-only 依賴、GoMobile binding、Swift ↔ Go 認證橋接、gotohp 真實上傳及 iPhone 實機測試。唔可以聲稱已經有 Pixel 無限容量。
+
+
 ## Pixel 實驗模式：手動 Token（未接入上傳核心）
 
 iPhone App 現在提供 SecureField，可手動貼入測試帳戶的 `oauth_token`，使用 iOS Keychain `WhenUnlockedThisDeviceOnly` 儲存，支援本機刪除。此 Token **不會**用於現有 Google Photos 官方 API，也**不會**經 GitHub Actions、日誌或網絡傳送。
