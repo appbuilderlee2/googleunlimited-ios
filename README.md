@@ -1,5 +1,11 @@
 # GoogleUnlimited iOS
 
+## Pixel 實驗模式：手動 Token（未接入上傳核心）
+
+iPhone App 現在提供 SecureField，可手動貼入測試帳戶的 `oauth_token`，使用 iOS Keychain `WhenUnlockedThisDeviceOnly` 儲存，支援本機刪除。此 Token **不會**用於現有 Google Photos 官方 API，也**不會**經 GitHub Actions、日誌或網絡傳送。
+
+**重要：這只完成輸入和儲存介面，不是有效的 gotohp 登入。** gotohp iOS 核心、認證交換、上傳及免費容量均未實作／驗證。切勿以為顯示「已儲存」即代表已登入。請只用不重要的專用測試帳戶，並了解 Cookie 憑證外洩的風險。
+
 ## Google Photos 官方上傳（開發中）
 
 iOS 版已接入 Google Sign-In 及 Google Photos Library API 的兩步上傳流程：
