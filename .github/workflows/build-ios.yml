@@ -1,0 +1,42 @@
+name: Build iOS IPA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'GoogleUnlimited/**'
+      - 'project.yml'
+      - '.github/workflows/build-ios.yml'
+jobs:
+  build:
+    runs-on: macos-15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Build unsigned device app
+        run: |
+          set -euo pipefail
+          xcodebuild -project GoogleUnlimited.xcodeproj \
+            -scheme GoogleUnlimited -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO build
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/DerivedData/Build/Products/Release-iphoneos/GoogleUnlimited.app"
+          test -d "$APP"
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/Payload/"
+          cd "$RUNNER_TEMP"
+          zip -qry "$GITHUB_WORKSPACE/GoogleUnlimited-unsigned.ipa" Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: googleunlimited-ios-unsigned-ipa
+          path: GoogleUnlimited-unsigned.ipa
+          retention-days: 14
