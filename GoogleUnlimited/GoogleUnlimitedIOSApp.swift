@@ -72,7 +72,7 @@ struct QueueEntry: Identifiable, Codable {
                     items[offset].status = "Google 已建立媒體項目"
                     items[offset].mediaID = mediaID
                 }
-                message = "已上傳：\\(current.originalName)"
+                message = "已上傳：\(current.originalName)"
             } catch {
                 if let offset = items.firstIndex(where: { $0.id == id }) {
                     items[offset].status = "失敗：\\(error.localizedDescription)"
@@ -186,7 +186,7 @@ struct ContentView: View {
                             Text("尚未設定 OAuth Client ID，請參閱 README。")
                                 .foregroundStyle(.orange).font(.subheadline)
                         } else if let email = session.email {
-                            Text("已登入：\\(email)").font(.subheadline)
+                            Text("已登入：\(email)").font(.subheadline)
                             HStack {
                                 Button(store.isUploading ? "上傳中…" : "開始上傳") {
                                     Task { await store.uploadAll(using: session) }
