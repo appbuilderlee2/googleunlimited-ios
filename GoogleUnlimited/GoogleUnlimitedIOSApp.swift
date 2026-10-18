@@ -33,7 +33,7 @@ struct QueueEntry: Identifiable, Codable {
     }
     func addFile(at source: URL, preferredName: String? = nil) {
         do {
-            let ext = (preferredName ?? source.lastPathComponent as NSString).pathExtension
+            let ext = URL(fileURLWithPath: preferredName ?? source.lastPathComponent).pathExtension
             let suffix = ext.isEmpty ? "bin" : ext.lowercased()
             let id = UUID()
             let filename = id.uuidString + "." + suffix
