@@ -1,19 +1,23 @@
 import SwiftUI
 import PhotosUI
 import UniformTypeIdentifiers
+import GoogleSignIn
 
 struct QueueEntry: Identifiable, Codable {
     let id: UUID
     let filename: String
     let bytes: Int64
     let added: Date
-    var status: String = "等待接入上傳服務"
+    var status: String = "等待上傳"
+    var originalName: String = ""
+    var mediaID: String? = nil
 }
 
 @MainActor final class QueueStore: ObservableObject {
     @Published var items: [QueueEntry] = []
     @Published var message: String = "目前只會儲存本地待上傳副本，不會上傳 Google Photos。"
     @Published var isImporting = false
+    @Published var isUploading = false
     private let fm = FileManager.default
     private var root: URL {
         let base = fm.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -40,11 +44,42 @@ struct QueueEntry: Identifiable, Codable {
             let dest = root.appendingPathComponent(filename)
             try fm.copyItem(at: source, to: dest)
             let size = (try fm.attributesOfItem(atPath: dest.path)[.size] as? NSNumber)?.int64Value ?? 0
-            items.insert(QueueEntry(id: id, filename: filename, bytes: size, added: Date()), at: 0)
+            items.insert(QueueEntry(id: id, filename: filename, bytes: size, added: Date(), originalName: preferredName ?? source.lastPathComponent), at: 0)
             persist()
             message = "已加入本地佇列（尚未上傳）：\(preferredName ?? source.lastPathComponent)"
         } catch {
             message = "匯入失敗：\(error.localizedDescription)"
+        }
+    }
+    func uploadAll(using session: GoogleSession) async {
+        guard !isUploading else { return }
+        isUploading = true
+        defer { isUploading = false; persist() }
+        let uploader = PhotosUploader()
+        for index in items.indices {
+            if items[index].mediaID != nil { continue }
+            let id = items[index].id
+            items[index].status = "上傳中"
+            persist()
+            do {
+                let token = try await session.token()
+                guard let current = items.first(where: { $0.id == id }) else { continue }
+                let file = root.appendingPathComponent(current.filename)
+                let mediaID = try await uploader.upload(file: file,
+                    originalName: current.originalName.isEmpty ? current.filename : current.originalName,
+                    accessToken: token)
+                if let offset = items.firstIndex(where: { $0.id == id }) {
+                    items[offset].status = "Google 已建立媒體項目"
+                    items[offset].mediaID = mediaID
+                }
+                message = "已上傳：\\(current.originalName)"
+            } catch {
+                if let offset = items.firstIndex(where: { $0.id == id }) {
+                    items[offset].status = "失敗：\\(error.localizedDescription)"
+                }
+                message = "部分檔案未成功，請檢查失敗項目。"
+            }
+            persist()
         }
     }
     func remove(_ item: QueueEntry) {
@@ -119,6 +154,7 @@ struct MediaPicker: UIViewControllerRepresentable {
 
 struct ContentView: View {
     @StateObject private var store = QueueStore()
+    @StateObject private var session = GoogleSession()
     @State private var showPicker = false
     @State private var showFiles = false
     @State private var confirmClear = false
@@ -142,8 +178,30 @@ struct ContentView: View {
                             }
                         }
                     }.padding().background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18))
-                    Label("未連接 Google Photos。所有檔案只係 App 內嘅本地副本，並未備份到雲端。", systemImage: "exclamationmark.shield.fill")
-                        .font(.subheadline).foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("官方 Google Photos 上傳").font(.headline)
+                        Text("使用 Google 官方 API，原始畫質上傳會計入 Google 容量；不提供 Pixel 無限容量。")
+                            .font(.caption).foregroundStyle(.secondary)
+                        if !session.configured {
+                            Text("尚未設定 OAuth Client ID，請參閱 README。")
+                                .foregroundStyle(.orange).font(.subheadline)
+                        } else if let email = session.email {
+                            Text("已登入：\\(email)").font(.subheadline)
+                            HStack {
+                                Button(store.isUploading ? "上傳中…" : "開始上傳") {
+                                    Task { await store.uploadAll(using: session) }
+                                }.buttonStyle(.borderedProminent).disabled(store.isUploading || store.items.allSatisfy { $0.mediaID != nil })
+                                Button("登出") { session.signOut() }.buttonStyle(.bordered)
+                            }
+                        } else {
+                            Button("使用 Google 帳戶登入") {
+                                Task { await session.signIn() }
+                            }.buttonStyle(.borderedProminent)
+                        }
+                        if let error = session.errorMessage { Text(error).foregroundStyle(.red).font(.caption) }
+                        Text("上傳成功只代表 API 建立媒體項目；刪除原檔前仍要在 Google Photos 核對，並保留第二份備份。")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }.padding().background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
                     HStack {
                         Button { showPicker = true } label: {
                             Label("從相簿選擇", systemImage: "photo.on.rectangle.angled")
@@ -210,5 +268,5 @@ struct ContentView: View {
     }
 }
 @main struct GoogleUnlimitedIOSApp: App {
-    var body: some Scene { WindowGroup { ContentView() } }
+    var body: some Scene { WindowGroup { ContentView().onOpenURL { GIDSignIn.sharedInstance.handle($0) } } }
 }
