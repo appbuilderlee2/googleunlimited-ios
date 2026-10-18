@@ -75,7 +75,7 @@ struct QueueEntry: Identifiable, Codable {
                 message = "已上傳：\(current.originalName)"
             } catch {
                 if let offset = items.firstIndex(where: { $0.id == id }) {
-                    items[offset].status = "失敗：\\(error.localizedDescription)"
+                    items[offset].status = "失敗：\(error.localizedDescription)"
                 }
                 message = "部分檔案未成功，請檢查失敗項目。"
             }
