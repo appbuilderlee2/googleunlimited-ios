@@ -1,8 +1,37 @@
 # GoogleUnlimited iOS
 
+## Google Photos 官方上傳（開發中）
+
+iOS 版已接入 Google Sign-In 及 Google Photos Library API 的兩步上傳流程：
+1. 由 iPhone 選相並複製到 App 本地佇列。
+2. 使用 Google OAuth `photoslibrary.appendonly` 登入。
+3. 按「開始上傳」；先 POST `/v1/uploads`，再 POST `/v1/mediaItems:batchCreate`。
+4. 只在建立媒體項目成功時紀錄 Google media ID。失敗檔案保留作重試。
+
+**這是官方 API：全部上傳以原畫質計入 Google 帳戶容量，並非 Pixel 模擬無限備份。** API 只可管理 App 建立的媒體。原始檔案不會自動刪除。暫時係前景順序上傳；大型影片背景續傳及更精細進度百分比仍需開發。
+
+### 你必須設定 Google Cloud（一次性）
+
+1. 在 [Google Cloud Console](https://console.cloud.google.com/) 建立／選擇專案，啟用 **Photos Library API**。
+2. 配置 **OAuth consent screen**，要求 `https://www.googleapis.com/auth/photoslibrary.appendonly`；處於 Testing 時將自己的 Google 帳戶加到 Test users。
+3. 建立 OAuth **iOS application** client，Bundle ID 設為 `com.appbuilderlee2.googleunlimitedios`。
+4. 將該 iOS **Client ID** 放到 GitHub Repo **Settings → Secrets and variables → Actions → Variables → New repository variable**：
+   - Name: `GOOGLE_IOS_CLIENT_ID`
+   - Value: 例如 `123456789-abcdef.apps.googleusercontent.com`（純 Client ID，唔係 Client Secret，更唔係 Google Token）。
+5. 重新運行 **Build iOS IPA**，下載新 artifact，再用 AltStore 安裝。未設定 Client ID 時 App 可啟動，但會顯示 OAuth 未設定，唔會嘗試上傳。
+
+不可將 Google 密碼、OAuth Cookie、Refresh Token、Apple ID 密碼或私人照片交到 GitHub Actions。GitHub Actions 使用公開性質的 OAuth Client ID，登入 Token 由 iOS Google Sign-In SDK 管理。
+
+### 尚未實機確認
+
+已提交原始碼與 workflow，**但仍未驗證新版本 GitHub Actions build／Google Cloud 登入／真實照片上傳**。首次測試用獨立測試帳戶及 1–2 張非重要照片；核對 Google Photos 及容量後再處理大批檔案。
+
+---
+
+
 Native SwiftUI iPhone app prototype for selecting photos/videos and preparing a **local queue**.
 
-**Important:** Version 0.1.0 does **not** upload anything to Google Photos. It does **not** emulate a Pixel, provide unlimited storage, or handle Google authentication. Do not delete your originals on the assumption that a backup has occurred. No backend and no credentials are required.
+**Important:** The new official API integration requires your own Google Cloud OAuth configuration. It does **not** emulate a Pixel or provide unlimited storage. Do not delete originals based only on an in-app success message.
 
 ## Features
 - Traditional Chinese SwiftUI dashboard
@@ -12,7 +41,7 @@ Native SwiftUI iPhone app prototype for selecting photos/videos and preparing a 
 - Persist queue state as JSON in Documents
 - Inspect selected filenames, sizes, statuses and remove app-local copies
 - Buttons to open Google Photos and clear local queue with confirmation
-- No background upload or misleading "success" state
+- Official Google OAuth + Google Photos upload, once configured; background upload not implemented
 
 ## Build on GitHub
 Actions → **Build iOS IPA** → Run workflow. Download the `googleunlimited-ios-unsigned-ipa` artifact. The IPA is **unsigned**, intended to be signed by AltStore Classic on device, subject to AltStore's current capabilities, Apple ID/device limits, and iOS compatibility. GitHub Actions must not contain Apple credentials.
@@ -20,7 +49,7 @@ Actions → **Build iOS IPA** → Run workflow. Download the `googleunlimited-io
 For local development, run `brew install xcodegen && xcodegen generate`, then open the generated `GoogleUnlimited.xcodeproj` using a recent compatible Xcode.
 
 ## Next phase
-Implement an optional **official Google Photos API** uploader with user-authorized OAuth and meaningful per-file verification. Official API uploads consume account quota. Pixel spoofing is not included and is not guaranteed to work on iOS.
+Improve large-file resumable transfer, persistent background uploads and byte-level progress. Pixel spoofing is not included and is not guaranteed to work on iOS.
 
 ## Safety
 Never submit OAuth cookies, Google tokens, Apple ID passwords, signing keys or user photographs to issues or Actions. The app stores local file copies until you remove them. Remove only copies inside the app, not your original Photos media.
