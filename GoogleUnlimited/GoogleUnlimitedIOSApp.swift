@@ -202,6 +202,7 @@ struct ContentView: View {
                         Text("上傳成功只代表 API 建立媒體項目；刪除原檔前仍要在 Google Photos 核對，並保留第二份備份。")
                             .font(.caption).foregroundStyle(.secondary)
                     }.padding().background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    GotohpCoreStatusView()
                     ExperimentalTokenView()
                     HStack {
                         Button { showPicker = true } label: {
