@@ -1,5 +1,12 @@
 # GoogleUnlimited iOS
 
+## 真實 gotohp Go 核心橋接（新）
+
+已加入 [Build Gotohp Core XCFramework](.github/workflows/build-gotohp-core.yml)。此 Workflow 固定 `xob0t/gotohp` Commit `97a5dc02db81f5571ce6b586f478600fcd44dd89`，使用真正 `app/core` 套件建立 GoMobile XCFramework。首個暴露接口 `Healthcheck()` 會使用上游 `core.UploadOptions`；**不是上傳 API**，不使用 Token、亦不連線 Google。
+
+目前尚未運行／確認 XCFramework 編譯成功，也未將其鏈接到主 IPA。下一步需要 Build 成功後檢查產物、再加入 Swift 端呼叫、逐步整合媒體及安全認證。請勿因為 CI 成功便聲稱 Pixel 無限容量或可上傳。
+
+
 ## 真正 gotohp 核心移植進度
 
 已加入 [gotohp iOS 相容性審查 Workflow](.github/workflows/audit-gotohp-ios.yml)，使用 upstream `xob0t/gotohp` **真實 backend**（唔係示範 Go 函式）執行 iOS arm64 編譯檢查，並輸出依賴圖及完整編譯日誌。Actions 尚待運行驗證。Workflow 會記錄當次上游 Commit；正式移植前必須再固定已審核 Commit，避免上游更新引入不明程式碼。
