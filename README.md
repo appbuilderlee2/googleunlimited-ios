@@ -1,5 +1,11 @@
 # GoogleUnlimited iOS
 
+## 真正 gotohp 上傳入口（實驗性，未連 Swift）
+
+`bridge/real_core_bridge.go` 現已呼叫上游實際 `core.NewApi` 及 `core.UploadFile`，處理真實媒體上傳路徑。接口 `UploadWithCredential(filePath, credential)` **只接受完整 gotohp Android 認證 query string**，不是之前手動輸入的 `oauth_token` Cookie。橋接目前會為每次調用建立私有暫存設定並清理，禁用 DeleteFromHost；仍未進行 iPhone 端、認證安全及網絡測試。
+
+**安全隔離：** 主 SwiftUI App 未調用此方法；不會擅自使用 Keychain 的 oauth_token。GoMobile XCFramework 是否可因新接口重新編譯仍須最新 GitHub Action 成功驗證。未有真實媒體上傳成功證據，亦無免費無限容量保證。
+
 ## 真實 gotohp Go 核心橋接（新）
 
 已加入 [Build Gotohp Core XCFramework](.github/workflows/build-gotohp-core.yml)。此 Workflow 固定 `xob0t/gotohp` Commit `97a5dc02db81f5571ce6b586f478600fcd44dd89`，使用真正 `app/core` 套件建立 GoMobile XCFramework。首個暴露接口 `Healthcheck()` 會使用上游 `core.UploadOptions`；**不是上傳 API**，不使用 Token、亦不連線 Google。
