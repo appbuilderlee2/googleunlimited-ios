@@ -7,7 +7,6 @@ import (
     "app/core"
     "context"
     "errors"
-    "fmt"
     "os"
     "path/filepath"
     "net/url"
@@ -59,7 +58,7 @@ func UploadWithCredential(filePath string, credential string) (string, error) {
         ForceUpload: false, PairLivePhotos: false,
     }
     mediaKey, err := core.UploadFile(context.Background(), api, filePath, options, 0, core.NopReporter{})
-    if err != nil { return "", fmt.Errorf("gotohp upload failed: %w", err) }
+    if err != nil { return "", errors.New("gotohp upload failed; details suppressed to protect credentials") }
     if mediaKey == "" { return "", errors.New("no returned media key; cannot confirm upload") }
     return mediaKey, nil
 }
